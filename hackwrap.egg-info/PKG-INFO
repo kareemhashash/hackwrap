@@ -1,0 +1,47 @@
+Metadata-Version: 2.4
+Name: hackwrap
+Version: 0.1.0
+Summary: Hack and wrap Python function with decorators.
+Home-page: https://github.com/kareemhashash/hackwrap
+Author: Kareem Hashash
+Author-email: kareemhashash2020@gmail.com
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license
+Dynamic: license-file
+Dynamic: requires-python
+Dynamic: summary
+
+# hackwrap
+
+A powerful decorator-based module to "hack" Python functions and classes — inject, modify, or protect behavior dynamically.
+
+## Features
+
+- 🔄 Convert functions between sync and async (`@asnc`, `@snc`)
+- 🧠 Inspect and extract function metadata with `this`
+- 🔒 Protect functions (`@private`, `@undeletable`, `@uncallable`)
+- 🌍 Promote functions to global scope (`@globe`)
+- ⚙ Inherit variables, modules, or class attributes (`@varinherit`, `@moduleinherit`, `@classinherit`)
+- 🧵 Make functions threaded (`@threadify`) or endless (`@endless`)
+- ⚠ Handle exceptions and warnings gracefully (`@handle`)
+- 🧩 Expose **double underscored** functions (`@public`)
+- 🎭 Treat functions like variables (`@variable`, `@paramvariable`)
+- 🧬 Dynamic wrapper inheritance (`@inherit`)
+- 🧰 Utility tools and decorators with full introspection and reflection
+
+## Installation
+
+```bash
+pip install hackwrap
