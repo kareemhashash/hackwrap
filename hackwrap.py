@@ -1,7 +1,7 @@
 """A powerful decorator-based module to "hack" Python functions and classes — inject, modify, or protect behavior dynamically."""
 
-import weakref as _weakref, threading as _threading, inspect as _inspect, functools as _functools, typing as _typing, ast as _ast, asyncio as _asnco, warnings as _warnings
-from typing import Callable as _Callable, Literal as _Literal, Union as _Union, Any as _Any, Type as _Type
+import weakref as _weakref, threading as _threading, inspect as _inspect, functools as _functools, typing as _typing, ast as _ast, asyncio as _asnco, warnings as _warnings, builtins as _builtins, types as _types, collections.abc as _abc
+from typing import Callable as _Callable, Literal as _Literal, Union as _Union, Any as _Any
 from types import ModuleType as _ModuleType
 
 class __FunctionLike:
@@ -91,18 +91,25 @@ def moduleinherit(module: _ModuleType):
 def uncallable(func: _Callable): """Decorator that makes a function unusable"""
 
 def undeletable(func: _Callable) -> _Callable:
-    """Decorator that makes a function deletable even when using the del keyword"""
+    """Decorator that makes a function undeletable even when using the del keyword"""
     original = func
     _backup_store = _weakref.WeakValueDictionary()
     _backup_store[original.__name__] = original
     class Undeletable:
-        def __call__(self, *args, **kwargs):return original(*args, **kwargs)
+        def __call__(self, *args, **kwargs): return original(*args, **kwargs)
         def __del__(self):
-            if original.__name__ in _backup_store: _inspect.currentframe().f_back.f_globals[original.__name__] = _backup_store[original.__name__]
-            _inspect.currentframe().f_back.f_globals[original.__name__] = undeletable(original)
+            try:
+                frame = _inspect.currentframe()
+                if frame is not None and frame.f_back is not None:
+                    if original.__name__ in _backup_store:
+                        frame.f_back.f_globals[original.__name__] = _backup_store[original.__name__]
+                    frame.f_back.f_globals[original.__name__] = undeletable(original)
+            except (AttributeError, TypeError):
+                pass
     for attr in ('__module__', '__name__', '__qualname__', '__doc__', '__annotations__'):
         if hasattr(original, attr): setattr(Undeletable, attr, getattr(original, attr))
     return Undeletable()
+
 
 def threadify(func: _Callable):
     """Decorator that threads a function automatically when called."""
@@ -175,44 +182,28 @@ def public(func: _Callable):
     if module: module.__dict__[func.__name__] = func
     return func
 
-def paramvariable(*a, **kw):
-    """Decorator that makes a function **behaves** like a `variable`, but automatically pass some params before accessing."""
-    def wrapper(func: _Callable):
-        class Var:
-            def __init__(self): pass  # uses closure
+def get_supported_var_dunders():
+    """returns all supported magic methods for variable function"""
+    sources = [_builtins, _types, _abc, _inspect, _threading, _ast, _asnco, _warnings, _weakref, _functools, _typing]
+    dunders = set()
+    for source in sources:
+        for name, obj in vars(source).items():
+            if _inspect.isclass(obj):
+                for attr_name in dir(obj):
+                    if attr_name.startswith("__") and attr_name.endswith("__"):
+                        attr = getattr(obj, attr_name, None)
+                        if callable(attr): dunders.add(attr_name)
+    return sorted(dunders)
 
-            def __getattr__(self, name):
-                return getattr(func(), name)
-
-            def __call__(self, *args, **kwargs): 
-                return func(*a, **kw)(*args, **kwargs)
-
-            def __str__(self): return str(func())
-            def __repr__(self): return repr(func())
-
-        def generate_magic_methods(cls):
-            try: sample = cls(func)._func(*a, **kw)
-            except Exception: sample = func(*a, **kw)
-            return sample
-        return generate_magic_methods(Var)
+def onment(callback):
+    class __UltimateWrapper:...
+    def wrapper(func) -> __UltimateWrapper:
+        class_definition = 'class __Ultimate:\n'
+        for key in get_supported_var_dunders(): class_definition += f'    def {key}(self, *args, **kwargs):\n        return callback().{key}(*args, **kwargs)\n' if not key in ['__new__', '__init__', '__del__'] else ''
+        namespace = {}
+        exec(class_definition, {"callback": callback}, namespace)
+        ult = namespace['__Ultimate']
+        for attr in ('__module__', '__name__', '__qualname__', '__doc__', '__annotations__'):
+            if hasattr(func, attr): setattr(ult, attr, getattr(func, attr))
+        return ult()
     return wrapper
-
-def variable(func: _Callable):
-    """Decorator that makes a function **behaves** like a `variable`."""
-    class Var:
-        def __init__(self): ...
-
-        def __getattr__(self, name):
-            return getattr(func(), name)
-
-        def __call__(self, *args, **kwargs): 
-            return func()(*args, **kwargs)
-
-        def __str__(self): return str(func())
-        def __repr__(self): return repr(func())
-
-    def assign_to_return_value(cls) -> Var:
-        try: sample = cls(func)._func()
-        except Exception: sample = func()
-        return sample
-    return assign_to_return_value(Var)
